@@ -1,0 +1,99 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.snmp4j.security.AuthMD5;
+import org.snmp4j.security.AuthSHA;
+import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivDES;
+import org.snmp4j.security.SecurityLevel;
+import org.snmp4j.security.UsmUser;
+import org.snmp4j.smi.OID;
+import org.snmp4j.smi.OctetString;
+import org.snmp4j.smi.UdpAddress;
+
+parser code {:
+    public Parser(Lexer lex) {
+        super(lex);
+    }
+
+    /* Prints the parsed routers and switches info ou stdout. */
+    public static void main(String[] args) {
+        try {
+            Lexer l = new Lexer(new BufferedReader(new FileReader(args[0])));
+            Parser p = new Parser(l);
+            p.parse();
+        } catch (Exception e) {
+            // Sloppy error management, but good enough in our case
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    /* Converts a string representation of host name or IP address (and
+     * optional postfixed port number) into a SNMP4J UDP address. */
+    public static UdpAddress parseHost(String s) throws UnknownHostException {
+        String[] parts = s.split(":");
+        InetAddress addr = InetAddress.getByName(parts[0]);
+        int port = (parts.length == 2) ? Integer.parseInt(parts[1]) : 161;
+        return new UdpAddress(addr, port);
+    }
+:}
+
+terminal AES, DES, EOL, MD5, NONE, ROUTERS, SHA, SWITCHES, V1, V2C, V3;
+terminal String STRING;
+
+non terminal configFile;
+non terminal OID authProto, privProto;
+non terminal UdpAddress host;
+non terminal List<SnmpAgent> snmpEntries, routers, switches;
+non terminal SnmpAgent snmpEntry;
+non terminal String hostname;
+non terminal OctetString pass, secName;
+
+start with configFile;
+
+configFile ::= switches:ss routers:rs
+    {: for (SnmpAgent entry : ss) { System.out.println(entry); }
+       for (SnmpAgent entry : rs) { System.out.println(entry); } :}
+    ;
+
+switches ::= SWITCHES EOL snmpEntries:es {: RESULT = es; :};
+
+routers ::= ROUTERS EOL snmpEntries:es   {: RESULT = es; :};
+
+snmpEntries
+    ::= snmpEntries:es snmpEntry:e  {: es.add(e); RESULT = es; :}
+    |   /* empty */                 {: RESULT = new ArrayList<SnmpAgent>(); :};
+
+snmpEntry
+    ::= host:h V1 secName:c EOL  {: RESULT = new SnmpAgent(h, 1, c); :}
+    |   host:h V2C secName:c EOL {: RESULT = new SnmpAgent(h, 2, c); :}
+    |   host:h V3 secName:name NONE NONE EOL
+        {: RESULT = new SnmpAgent(h, SecurityLevel.noAuthNoPriv,
+                                  new UsmUser(name, null, null, null, null)); :}
+    |   host:h V3 secName:name authProto:aid pass:ap NONE EOL
+        {: RESULT = new SnmpAgent(h, SecurityLevel.authNoPriv,
+                                  new UsmUser(name, aid, ap, null, null)); :}
+    |   host:h V3 secName:name authProto:aid pass:ap privProto:pid pass:pp EOL
+        {: RESULT = new SnmpAgent(h, SecurityLevel.authPriv,
+                                  new UsmUser(name, aid, ap, pid, pp)); :};
+
+host ::= STRING:s       {: RESULT = Parser.parseHost(s); :};
+
+secName ::= STRING:s    {: RESULT = new OctetString(s); :};
+
+authProto
+    ::= MD5             {: RESULT = AuthMD5.ID; :}
+    |   SHA             {: RESULT = AuthSHA.ID; :};
+
+privProto
+    ::= DES             {: RESULT = PrivDES.ID; :}
+    |   AES             {: RESULT = PrivAES128.ID; :};
+
+pass ::= STRING:s       {: RESULT = new OctetString(s); :};

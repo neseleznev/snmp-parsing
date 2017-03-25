@@ -1,0 +1,6 @@
+This is not a example of good parsing style (error reporting is especially
+bad), but this is not a compiler course, and it should be enough to get you
+started.
+
+Note that you can achieve the same results with just StreamTokenizer or
+Scanner, but it is cleaner and not much longer to do it with JFlex and CUP.
