@@ -18,3 +18,11 @@ Parser.class:	src/Parser.java src/Lexer.java
 .PHONY:	clean
 clean:
 	$(RM) -f *~ out/production/snmp-parsing/*/*.class src/Lexer.java src/Parser.java src/Sym.java
+
+
+# directives without recompiling Jflex & Cup
+all_a:	clean_a Parser.class
+	java -cp $(CLSPATH) Parser lab.cfg
+
+clean_a:
+	$(RM) *~ out/production/snmp-parsing/*/*.class
