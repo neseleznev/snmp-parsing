@@ -1,4 +1,4 @@
-CLSPATH=.:/usr/share/java/cup.jar:/opt/snmp4j-2.4.3/dist/snmp4j-2.4.3.jar:out/production/snmp-parsing
+CLSPATH=.:lib/java-cup-11b-runtime.jar:/opt/snmp4j-2.4.3/dist/snmp4j-2.4.3.jar:out/production/snmp-parsing
 
 # We recompile everything each time, since we don't know about Java
 # dependencies. Use something else like ant for better results.
