@@ -1,3 +1,5 @@
+package src;
+
 import java_cup.runtime.Symbol;
 
 /* There are so few keywords that we don't bother with an hash table.
@@ -14,11 +16,13 @@ import java_cup.runtime.Symbol;
 %column
 
 %{
-private Symbol symbol(int type) { return new Symbol(type, yyline, yycolumn); }
+  private Symbol symbol(int type) {
+    return new Symbol(type, yyline, yycolumn);
+  }
 
-private Symbol symbol(int type, Object val) {
+  private Symbol symbol(int type, Object val) {
     return new Symbol(type, yyline, yycolumn, val);
-}
+  }
 %}
 
 EOL = \r|\n|\r\n

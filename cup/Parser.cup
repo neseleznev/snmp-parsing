@@ -1,3 +1,5 @@
+package src;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -26,7 +28,9 @@ parser code {:
         try {
             Lexer l = new Lexer(new BufferedReader(new FileReader(args[0])));
             Parser p = new Parser(l);
-            p.parse();
+            java_cup.runtime.Symbol parseTree = p.parse();
+            ConfigFile configFile = (ConfigFile) parseTree.value;
+            System.out.println(configFile);
         } catch (Exception e) {
             // Sloppy error management, but good enough in our case
             System.err.println(e.getMessage());
@@ -48,7 +52,7 @@ parser code {:
 terminal AES, DES, EOL, MD5, NONE, ROUTERS, SHA, SWITCHES, V1, V2C, V3;
 terminal String STRING;
 
-non terminal configFile;
+non terminal ConfigFile configFile;
 non terminal OID authProto, privProto;
 non terminal UdpAddress host;
 non terminal List<SnmpAgent> snmpEntries, routers, switches;
@@ -58,10 +62,7 @@ non terminal OctetString pass, secName;
 
 start with configFile;
 
-configFile ::= switches:ss routers:rs
-    {: for (SnmpAgent entry : ss) { System.out.println(entry); }
-       for (SnmpAgent entry : rs) { System.out.println(entry); } :}
-    ;
+configFile ::= switches:ss routers:rs    {: RESULT = new ConfigFile(ss, rs); :};
 
 switches ::= SWITCHES EOL snmpEntries:es {: RESULT = es; :};
 
