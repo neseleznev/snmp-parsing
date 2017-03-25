@@ -1,3 +1,14 @@
+This repository provides
+snmp4j https://www.snmp4j.org/
+and
+cup http://www2.cs.tum.edu/projects/cup/
+libraries, you need only
+
+1) Install JFlex http://jflex.de/installing.html
+
+2) make all
+or make all_a if you don't want to recompile Parser & Lexer
+
 This is not a example of good parsing style (error reporting is especially
 bad), but this is not a compiler course, and it should be enough to get you
 started.
