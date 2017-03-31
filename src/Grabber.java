@@ -1,9 +1,8 @@
 package src;
 
-import org.snmp4j.*;
-import org.snmp4j.event.ResponseEvent;
-import org.snmp4j.mp.SnmpConstants;
-import org.snmp4j.smi.*;
+import org.snmp4j.Snmp;
+import org.snmp4j.TransportMapping;
+import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.BufferedReader;
@@ -14,16 +13,9 @@ import java.io.IOException;
 //import org.snmp4j;
 
 /**
- * Main class providing grabbing functionality
+ * Main class providing grabbing functionality. Still work-in-progress
  */
 public class Grabber {
-
-    private Snmp snmp;
-    private String address;
-
-    public Grabber(String address) {
-        this.address = address;
-    }
 
     private static ConfigFile parse(String filename) {
         try {
@@ -40,45 +32,9 @@ public class Grabber {
         }
     }
 
-    /**
-     * Simple method which takes a single OID and returns the response from the agent as a String.
-     */
-    public String getAsString(OID oid) throws IOException {
-        ResponseEvent event = get(new OID[]{oid});
-        return event.getResponse().get(0).getVariable().toString();
-    }
-
-    /**
-     * This method is more generic and is capable of handling multiple OIDs.
-     * In a real application with lots of agents you would probably implement this asynchronously
-     * with a ResponseListener instead to prevent your thread pool from being exhausted.
-     */
-    public ResponseEvent get(OID oids[]) throws IOException {
-        PDU pdu = new PDU();
-        for (OID oid : oids) {
-            pdu.add(new VariableBinding(oid));
-        }
-        pdu.setType(PDU.GET);
-        ResponseEvent event = snmp.send(pdu, getTarget(), null);
-        if(event != null) {
-            return event;
-        }
-        throw new RuntimeException("GET timed out");
-    }
-
-    /**
-     * Returns a Target, which contains information about where the data should be fetched and how.
-     */
-    private Target getTarget() {
-        Address targetAddress = GenericAddress.parse(address);
-        CommunityTarget target = new CommunityTarget();
-        target.setCommunity(new OctetString("public"));
-        target.setAddress(targetAddress);
-        target.setRetries(2);
-        target.setTimeout(1500);
-        target.setVersion(SnmpConstants.version2c);
-        return target;
-    }
+//    /**
+//     * Returns a Target, which contains information about where the data should be fetched and how.
+//     */
 
     public static void main(String[] args) throws IOException {
         ConfigFile configFile = parse(args.length > 0 ? args[0] : "");
@@ -87,34 +43,36 @@ public class Grabber {
 
         System.out.println(configFile);
 
-
         // Create TransportMapping and Listen
         TransportMapping transport = new DefaultUdpTransportMapping(new UdpAddress());
         transport.listen();
 
         // Create Snmp object for sending data to Agent
         Snmp snmp = new Snmp(transport);
+//
+//        if (true) {
+//            SnmpAgent agent = configFile.routers.get(0);
+//
+//            Switch sw = new Switch(agent);
+//            sw.discover(snmp);
+//            System.out.println(sw);
+//
+////        Router rt = new Router(agent);
+////        rt.discover(snmp);
+////        System.out.println(rt);
+//        }
 
-        SnmpAgent agent = configFile.routers.get(0);
-
-//        Switch sw = new Switch(agent);
-//        sw.discover(snmp);
-//        System.out.println(sw);
-
-        Router rt = new Router(agent);
-        rt.discover(snmp);
-        System.out.println(rt);
-
-
-
-
-
+        for (SnmpAgent agent: configFile.switches) {
+            Switch sw = new Switch(agent);
+            sw.discover(snmp);
+            System.out.println(sw);
+        }
+        for (SnmpAgent agent: configFile.routers) {
+            Router rt = new Router(agent);
+            rt.discover(snmp);
+            System.out.println(rt);
+        }
 
         snmp.close();
-//        String address = "demo.snmplabs.com"; //"udp:127.0.0.1/161";
-//        Grabber client = new Grabber(address);
-//        client.start();
-//        String sysName = client.getAsString(new OID(".1.3.6.1.2.1.1.5"));
-//        System.out.println(sysName);
     }
 }

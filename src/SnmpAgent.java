@@ -102,9 +102,18 @@ public class SnmpAgent {
         return null;
     }
 
+    /**
+     * Simple method which takes a single OID and returns the response from the agent as a PDU.
+     */
     public PDU getResponse(Snmp snmp, String oid) throws IOException {
         return getResponse(snmp, new String[] {oid});
     }
+
+    /**
+     * This method is more generic and is capable of handling multiple OIDs.
+     * In a real application with lots of agents you would probably implement this asynchronously
+     * with a ResponseListener instead to prevent your thread pool from being exhausted.
+     */
     public PDU getResponse(Snmp snmp, String[] oids) throws IOException {
         // Create the PDU object
         PDU pdu;
@@ -120,12 +129,12 @@ public class SnmpAgent {
         pdu.setType(PDU.GET);
         pdu.setRequestID(new Integer32(1));
 
-        System.out.println("\tDEBUG: Sending Request to Agent...");
+//        System.out.println("\tDEBUG: Sending Request to Agent...");
         ResponseEvent response = snmp.get(pdu, target);
 
         // Process Agent Response
         if (response != null) {
-            System.out.println("\tDEBUG: Got Response from Agent");
+//            System.out.println("\tDEBUG: Got Response from Agent");
             return response.getResponse();
         }
         return null;

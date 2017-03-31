@@ -51,6 +51,30 @@ public class Switch {
                 System.err.println("oid [" + VLAN + "] " + event.getErrorMessage());
                 continue;
             }
+            VariableBinding[] variableBindings = event.getVariableBindings();
+            if (variableBindings == null || variableBindings.length == 0){
+                continue;
+            }
+            for (VariableBinding binding: variableBindings) {
+                String oid = binding.getOid().toString();
+                if (isProperPrefix(oid, VLAN_ID)) {
+                    // Initialize and put vlans
+                    String vlanId = binding.getVariable().toString();
+                    Vlan vlan = new Vlan();
+                    vlan.id = vlanId;
+                    vlans.put(vlanId, vlan);
+                }
+            }
+        }
+
+        for (TreeEvent event: events) {
+            if (event == null) {
+                continue;
+            }
+            if (event.isError()) {
+                System.err.println("oid [" + VLAN + "] " + event.getErrorMessage());
+                continue;
+            }
 
             VariableBinding[] variableBindings = event.getVariableBindings();
             if (variableBindings == null || variableBindings.length == 0){
@@ -58,19 +82,19 @@ public class Switch {
             }
 
             for (VariableBinding binding: variableBindings) {
+                if (binding == null || binding.getVariable() == null) {
+                    continue;
+                }
                 String oid = binding.getOid().toString();
                 String vlanId = oid.substring(oid.lastIndexOf(".") + 1);
                 // In branches of following if statement shouldn't be NullPointerException
                 // except first initial
                 Vlan vlan = vlans.get(vlanId);
+                if (vlan == null) {
+                    continue;
+                }
 
-                if (isProperPrefix(oid, VLAN_ID)) {
-                    // Initialize and put vlans
-                    String newVlanId = binding.getVariable().toString();
-                    Vlan newVlan = new Vlan();
-                    newVlan.id = newVlanId;
-                    vlans.put(newVlanId, newVlan);
-                } else if (isProperPrefix(oid, VLAN_NAME)) {
+                if (isProperPrefix(oid, VLAN_NAME)) {
                     vlan.name = binding.getVariable().toString();
                 } else if (isProperPrefix(oid, VLAN_PORTS)) {
                     String[] hex = binding.getVariable().toString().split(":");

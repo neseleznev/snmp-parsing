@@ -1,7 +1,8 @@
 package src;
 
 /**
- * Created by nikita on 26/03/17.
+ * Helper class, containing required OIDs for making queries.
+ * Here you can find more information about OID
  * http://oid-info.com/get/1.3.6.1.2.1.17.7.1.4.2.1.3
  */
 public final class SnmpConstants {
