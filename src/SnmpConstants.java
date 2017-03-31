@@ -17,4 +17,14 @@ public final class SnmpConstants {
     public static final String VLAN_NAME = VLAN + ".3.1.1"; // dot1qVlanStaticName
     public static final String VLAN_PORTS = VLAN + ".3.1.2"; // dot1qVlanStaticEgressPorts
 
+    public static final String IFACE = PREFIX + "2.2.1"; // ifEntry
+    public static final String IFACE_ID = IFACE + ".1"; // ifIndex
+    public static final String IFACE_PHYS_ADDR = IFACE + ".6"; // ifPhysAddress
+
+    public static final String IP_ADDR = PREFIX + "4.20.1"; // ipAddrEntry
+    public static final String IP_ADDRESSES = IP_ADDR + ".2"; // ipAdEntIfIndex
+    public static final String IP_MASK = IP_ADDR + ".3"; // ipAdEntNetMask
+
+
+
 }

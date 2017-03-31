@@ -1,9 +1,17 @@
 package src;
 
 import org.snmp4j.Snmp;
+import org.snmp4j.smi.OID;
+import org.snmp4j.smi.VariableBinding;
+import org.snmp4j.util.DefaultPDUFactory;
+import org.snmp4j.util.TreeEvent;
+import org.snmp4j.util.TreeUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import static src.SnmpConstants.*;
 
 /**
  * Router entity, able to send queries and parse snmp response.
@@ -15,8 +23,8 @@ public class Router {
         this.agent = agent;
     }
 
-    List<Vlan> interfaces = new ArrayList<>();
-    List<Vlan> routes = new ArrayList<>();
+    List<Iface> interfaces = new ArrayList<>();
+    List<Route> routes = new ArrayList<>();
 
     /**
      * Shortcut for discover procedures.
@@ -32,7 +40,81 @@ public class Router {
      * and figures out interfaces with required properties
      */
     public void discoverInterfaces(Snmp snmp) {
+        // Get MIB data.
+        TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
+        List<TreeEvent> events = treeUtils.walk(agent.target, new OID[] {
+                new OID(IFACE_ID), new OID(IFACE_PHYS_ADDR),
+                new OID(IP_ADDRESSES), new OID(IP_MASK)});
 
+        HashMap<String, Iface> ifaces = new HashMap<>();
+        for (TreeEvent event: events) {
+            if(event == null) {
+                continue;
+            }
+            if (event.isError()) {
+                System.err.println("oid [" + IFACE + "] " + event.getErrorMessage());
+                continue;
+            }
+
+            VariableBinding[] variableBindings = event.getVariableBindings();
+            if(variableBindings == null || variableBindings.length == 0){
+                continue;
+            }
+            for (VariableBinding binding: variableBindings) {
+                String oid = binding.getOid().toString();
+                if (oid.startsWith(IFACE_ID)) {
+                    // Initialize and put ifaces
+                    String newIfaceId = binding.getVariable().toString();
+                    ifaces.put(newIfaceId, new Iface());
+                }
+            }
+        }
+
+        for (TreeEvent event: events) {
+            if (event == null) {
+                continue;
+            }
+            if (event.isError()) {
+                System.err.println("oid [" + IFACE + "] " + event.getErrorMessage());
+                continue;
+            }
+
+            VariableBinding[] variableBindings = event.getVariableBindings();
+            if (variableBindings == null || variableBindings.length == 0){
+                continue;
+            }
+            for (VariableBinding binding: variableBindings) {
+                String oid = binding.getOid().toString();
+                String ifaceId = oid.substring(oid.lastIndexOf(".") + 1);
+                Iface iface = ifaces.get(ifaceId);
+
+                if (oid.startsWith(IFACE_PHYS_ADDR)) {
+                    iface.physicalAddress = binding.getVariable().toString();
+                } else if (oid.startsWith(IP_ADDRESSES)) {
+                    ifaceId = binding.getVariable().toString();
+                    iface = ifaces.get(ifaceId);
+                    String[] tokens = oid.split("\\d+\\.\\d+\\.\\d+\\.\\d+$");
+                    if (tokens.length > 0) {
+                        iface.ip = oid.substring(tokens[0].length());
+                    }
+                } else if (oid.startsWith(IP_MASK)) {
+                    String[] tokens = oid.split("\\d+\\.\\d+\\.\\d+\\.\\d+$");
+                    if (tokens.length == 0) {
+                        continue;
+                    }
+                    String ipAddress = oid.substring(tokens[0].length());
+                    for (Iface interf: ifaces.values()) {
+                        if (interf.ip.equals(ipAddress)) {
+                            iface = interf;
+                        }
+                    }
+                    iface.netMask = binding.getVariable().toString();
+                }
+            }
+        }
+        for (Iface iface: ifaces.values()) {
+            this.interfaces.add(iface);
+        }
     }
 
     /**
@@ -45,18 +127,18 @@ public class Router {
 
     /**
      * <router>    ::= "router" SYS_NAME "{" { <interface> } { route } "}"
-     * <interface> ::= "interface" <ip-name> NETMASK PHYS_ADDRESS
-     * <ip-name>   ::= IP "(" DNS_NAME ")"
+     * <interface> ::= "interface" <ip-dnsName> NETMASK PHYS_ADDRESS
+     * <ip-dnsName>   ::= IP "(" DNS_NAME ")"
      * <route>     ::= "route" <dest> <next-hop>
      * <dest>      ::= IP NETMASK
-     * <next-hop>  ::= <ip-name>
+     * <next-hop>  ::= <ip-dnsName>
      * where
      * SYS_NAME is the SNMP sysName object.
-     * DNS_NAME is the name corresponding to IP, as obtained through DNS resolution.
+     * DNS_NAME is the dnsName corresponding to IP, as obtained through DNS resolution.
      *     Output <UNKNOWN> if DNS resolution fails.
-     * <ip-name> should be printed as one token, i.e. without space between
-     *     the IP address and the corresponding DNS name. If the IP is unknown,
-     *     replace the whole <ip-name> by a single <UNKNOWN>.
+     * <ip-dnsName> should be printed as one token, i.e. without space between
+     *     the IP address and the corresponding DNS dnsName. If the IP is unknown,
+     *     replace the whole <ip-dnsName> by a single <UNKNOWN>.
      * PHYS_ADDRESS is the link-layer address of the interface. If the interface
      *     is Ethernet, report it with colons (e.g. 01:23:45:67:89:ab).
      *
@@ -75,11 +157,11 @@ public class Router {
                 : agent.sysName);
         sb.append(" {\n");
 
-        for (Vlan iface: interfaces) {
+        for (Iface iface: interfaces) {
             sb.append("  ").append(iface).append("\n");
         }
 
-        for (Vlan route: routes) {
+        for (Route route: routes) {
             sb.append("  ").append(route).append("\n");
         }
 

@@ -10,9 +10,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Vector;
-
-import static src.SnmpConstants.SYS_NAME;
 
 //import org.snmp4j;
 
@@ -98,42 +95,15 @@ public class Grabber {
         // Create Snmp object for sending data to Agent
         Snmp snmp = new Snmp(transport);
 
-        SnmpAgent agent = configFile.switches.get(0);
+        SnmpAgent agent = configFile.routers.get(0);
 
-        String[] oids = new String[] {SYS_NAME, "1.3.6.1.2.1.1.4.0"};
-        PDU response = agent.getResponse(snmp, oids);
+//        Switch sw = new Switch(agent);
+//        sw.discover(snmp);
+//        System.out.println(sw);
 
-        if (response != null)
-        {
-            int errorStatus = response.getErrorStatus();
-            int errorIndex = response.getErrorIndex();
-            String errorStatusText = response.getErrorStatusText();
-
-            if (errorStatus == PDU.noError)
-            {
-                System.out.println("Snmp Get Response = " + response.getVariableBindings());
-            }
-            else
-            {
-                System.out.println("Error: Request Failed");
-                System.out.println("Error Status = " + errorStatus);
-                System.out.println("Error Index = " + errorIndex);
-                System.out.println("Error Status Text = " + errorStatusText + " " + agent.givenHostName);
-            }
-        }
-        else
-        {
-            System.out.println("Error: Response PDU is null");
-        }
-
-        Vector<VariableBinding> res = (Vector<VariableBinding>) response.getVariableBindings();
-        response.getVariableBindings().get(0).getVariable();
-
-        Switch sw = new Switch(agent);
-
-        sw.discoverVlans(snmp);
-        System.out.println(sw);
-
+        Router rt = new Router(agent);
+        rt.discover(snmp);
+        System.out.println(rt);
 
 
 
