@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static src.SnmpConstants.*;
+import static src.Utils.isProperPrefix;
 
 /**
  * Router entity, able to send queries and parse snmp response.
@@ -62,7 +63,7 @@ public class Router {
             }
             for (VariableBinding binding: variableBindings) {
                 String oid = binding.getOid().toString();
-                if (oid.startsWith(IFACE_ID)) {
+                if (isProperPrefix(oid, IFACE_ID)) {
                     // Initialize and put ifaces
                     String newIfaceId = binding.getVariable().toString();
                     ifaces.put(newIfaceId, new Iface());
@@ -88,16 +89,16 @@ public class Router {
                 String ifaceId = oid.substring(oid.lastIndexOf(".") + 1);
                 Iface iface = ifaces.get(ifaceId);
 
-                if (oid.startsWith(IFACE_PHYS_ADDR)) {
+                if (isProperPrefix(oid, IFACE_PHYS_ADDR)) {
                     iface.physicalAddress = binding.getVariable().toString();
-                } else if (oid.startsWith(IP_ADDRESSES)) {
+                } else if (isProperPrefix(oid, IP_ADDRESSES)) {
                     ifaceId = binding.getVariable().toString();
                     iface = ifaces.get(ifaceId);
                     String[] tokens = oid.split("\\d+\\.\\d+\\.\\d+\\.\\d+$");
                     if (tokens.length > 0) {
                         iface.ip = oid.substring(tokens[0].length());
                     }
-                } else if (oid.startsWith(IP_MASK)) {
+                } else if (isProperPrefix(oid, IP_MASK)) {
                     String[] tokens = oid.split("\\d+\\.\\d+\\.\\d+\\.\\d+$");
                     if (tokens.length == 0) {
                         continue;
@@ -110,6 +111,7 @@ public class Router {
                     }
                     iface.netMask = binding.getVariable().toString();
                 }
+                // TODO DNS resolve
             }
         }
         for (Iface iface: ifaces.values()) {
@@ -118,11 +120,59 @@ public class Router {
     }
 
     /**
-     * Walks in agent's tree with prefix SnmpConstants.ROUTES
+     * Walks in agent's tree with prefix SnmpConstants.IP_ROUTE
      * and figures out routes with required properties
      */
     public void discoverRoutes(Snmp snmp) {
+        // Get MIB data.
+        TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
+        List<TreeEvent> events = treeUtils.walk(agent.target, new OID[] {
+                new OID(IP_ROUTE_DEST), new OID(IP_ROUTE_NEXT_HOP),
+                new OID(IP_ROUTE_MASK)});
 
+        HashMap<String, Route> routes = new HashMap<>();
+        for (TreeEvent event: events) {
+            if (event == null) {
+                continue;
+            }
+            if (event.isError()) {
+                System.err.println("oid [" + IP_ROUTE + "] " + event.getErrorMessage());
+                continue;
+            }
+
+            VariableBinding[] variableBindings = event.getVariableBindings();
+            if (variableBindings == null || variableBindings.length == 0){
+                continue;
+            }
+            for (VariableBinding binding: variableBindings) {
+                String oid = binding.getOid().toString();
+                String[] tokens = oid.split("\\d+\\.\\d+\\.\\d+\\.\\d+$");
+                if (tokens.length == 0) {
+                    continue;
+                }
+                String from = oid.substring(tokens[0].length());
+                String to = binding.getVariable().toString();
+                Route route = routes.get(from);
+                System.out.println(oid + " <" + from + "> <" + to + ">");
+                if (isProperPrefix(oid, IP_ROUTE_DEST)) {
+                    // Initialize and put routes
+                    route = new Route();
+                    route.ip = to;
+                    System.out.println("Created " + route.ip);
+                } else if (isProperPrefix(oid, IP_ROUTE_NEXT_HOP)) {
+                    route.nextIp = to;
+                    System.out.println("Changed nextIP" + route.ip + " " + route.nextIp);
+                } else if (isProperPrefix(oid, IP_ROUTE_MASK)) {
+                    route.netMask = to;
+                    System.out.println("Changed maskIP" + route.ip + " " + route.netMask);
+                }
+                // TODO DNS resolution
+                routes.put(from, route);
+            }
+        }
+        for (Route route: routes.values()) {
+            this.routes.add(route);
+        }
     }
 
     /**

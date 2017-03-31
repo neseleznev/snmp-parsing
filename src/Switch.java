@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static src.SnmpConstants.*;
+import static src.Utils.isProperPrefix;
 
 /**
  * Switch entity, able to send queries and parse snmp response.
@@ -63,15 +64,15 @@ public class Switch {
                 // except first initial
                 Vlan vlan = vlans.get(vlanId);
 
-                if (oid.startsWith(VLAN_ID)) {
+                if (isProperPrefix(oid, VLAN_ID)) {
                     // Initialize and put vlans
                     String newVlanId = binding.getVariable().toString();
                     Vlan newVlan = new Vlan();
                     newVlan.id = newVlanId;
                     vlans.put(newVlanId, newVlan);
-                } else if (oid.startsWith(VLAN_NAME)) {
+                } else if (isProperPrefix(oid, VLAN_NAME)) {
                     vlan.name = binding.getVariable().toString();
-                } else if (oid.startsWith(VLAN_PORTS)) {
+                } else if (isProperPrefix(oid, VLAN_PORTS)) {
                     String[] hex = binding.getVariable().toString().split(":");
                     for (int i = 0; i < hex.length; ++i) {
                         int hexValue = Integer.parseInt(hex[i], 16);
