@@ -2,6 +2,7 @@ package src;
 
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
+import org.snmp4j.ScopedPDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.SnmpConstants;
@@ -122,7 +123,13 @@ public class SnmpAgent {
     }
     public PDU getResponse(Snmp snmp, String[] oids) throws IOException {
         // Create the PDU object
-        PDU pdu = new PDU();
+        PDU pdu;
+        if (this.version == SnmpConstants.version3) {
+            pdu = new ScopedPDU();
+        } else {
+            pdu = new PDU();
+        }
+
         for (String oid: oids) {
             pdu.add(new VariableBinding(new OID(oid)));
         }

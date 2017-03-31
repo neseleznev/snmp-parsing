@@ -41,10 +41,9 @@ public class Switch {
         TreeUtils treeUtils = new TreeUtils(snmp, new DefaultPDUFactory());
         java.util.List<TreeEvent> events = treeUtils.walk(agent.target, new OID[] {new OID(VLAN)});
 
-        System.out.println(events.size());
         HashMap<String, Vlan> vlans = new HashMap<>();
         for (TreeEvent event: events) {
-            if(event == null) {
+            if (event == null) {
                 continue;
             }
             if (event.isError()) {
@@ -53,7 +52,7 @@ public class Switch {
             }
 
             VariableBinding[] variableBindings = event.getVariableBindings();
-            if(variableBindings == null || variableBindings.length == 0){
+            if (variableBindings == null || variableBindings.length == 0){
                 continue;
             }
 
@@ -63,7 +62,6 @@ public class Switch {
                 // In branches of following if statement shouldn't be NullPointerException
                 // except first initial
                 Vlan vlan = vlans.get(vlanId);
-                System.out.println(oid + " " + vlanId + " " + vlan + VLAN_ID);
 
                 if (oid.startsWith(VLAN_ID)) {
                     // Initialize and put vlans
@@ -83,15 +81,12 @@ public class Switch {
                             }
                         }
                     }
-                    System.out.println(binding.getVariable());
                 }
             }
         }
-        List<Vlan> vlans1 = new ArrayList<>();
         for (Vlan vlan: vlans.values()) {
-            vlans1.add(vlan);
+            this.vlans.add(vlan);
         }
-        this.vlans = vlans1;
     }
 
     /**
