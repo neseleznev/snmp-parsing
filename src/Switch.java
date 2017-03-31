@@ -30,6 +30,9 @@ public class Switch {
      * Shortcut for discover procedures.
      */
     public void discover(Snmp snmp) {
+        if (agent.host == null) {
+            return;
+        }
         agent.discoverName(snmp);
         discoverVlans(snmp);
     }
