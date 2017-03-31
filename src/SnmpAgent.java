@@ -12,6 +12,9 @@ import org.snmp4j.smi.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Vector;
+
+import static src.SnmpConstants.SYS_NAME;
 
 /* Simple data structure to remember info about an SNMP agent. */
 public class SnmpAgent {
@@ -49,6 +52,45 @@ public class SnmpAgent {
         }
         target.setRetries(2);
         target.setTimeout(1000);
+    }
+
+    String sysName = "<UNKNOWN>";
+
+    /**
+     * Asks agent's OID SnmpConstants.SYS_NAME and stores it.
+     */
+    public void discoverName(Snmp snmp) {
+        PDU response = null;
+        try {
+            response = getResponse(snmp, SYS_NAME);
+        } catch (IOException ignored) {
+        }
+
+        if (response != null)
+        {
+            int errorStatus = response.getErrorStatus();
+            int errorIndex = response.getErrorIndex();
+            String errorStatusText = response.getErrorStatusText();
+
+            if (errorStatus == PDU.noError)
+            {
+                Vector<VariableBinding> binding = (Vector<VariableBinding>) response.getVariableBindings();
+                if (binding != null && binding.size() > 0) {
+                    sysName = binding.get(0).getVariable().toString();
+                }
+            }
+            else
+            {
+                System.err.println("Error: Request Failed");
+                System.err.println("Error Status = " + errorStatus);
+                System.err.println("Error Index = " + errorIndex);
+                System.err.println("Error Status Text = " + errorStatusText + " " + givenHostName);
+            }
+        }
+        else
+        {
+            System.err.println("Error: Response PDU is null");
+        }
     }
 
     /**

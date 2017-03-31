@@ -1,6 +1,5 @@
 package src;
 
-import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
@@ -8,11 +7,9 @@ import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.util.TreeEvent;
 import org.snmp4j.util.TreeUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 
 import static src.SnmpConstants.*;
 
@@ -26,52 +23,14 @@ public class Switch {
         this.agent = agent;
     }
 
-    String sysName = "<UNKNOWN>";
     List<Vlan> vlans = new ArrayList<>();
 
     /**
      * Shortcut for discover procedures.
      */
     public void discover(Snmp snmp) {
-        discoverName(snmp);
+        agent.discoverName(snmp);
         discoverVlans(snmp);
-    }
-
-    /**
-     * Asks agent's OID SnmpConstants.SYS_NAME and stores it.
-     */
-    public void discoverName(Snmp snmp) {
-        PDU response = null;
-        try {
-            response = agent.getResponse(snmp, SYS_NAME);
-        } catch (IOException ignored) {
-        }
-
-        if (response != null)
-        {
-            int errorStatus = response.getErrorStatus();
-            int errorIndex = response.getErrorIndex();
-            String errorStatusText = response.getErrorStatusText();
-
-            if (errorStatus == PDU.noError)
-            {
-                Vector<VariableBinding> binding = (Vector<VariableBinding>) response.getVariableBindings();
-                if (binding != null && binding.size() > 0) {
-                    sysName = binding.get(0).getVariable().toString();
-                }
-            }
-            else
-            {
-                System.err.println("Error: Request Failed");
-                System.err.println("Error Status = " + errorStatus);
-                System.err.println("Error Index = " + errorIndex);
-                System.err.println("Error Status Text = " + errorStatusText + " " + agent.givenHostName);
-            }
-        }
-        else
-        {
-            System.err.println("Error: Response PDU is null");
-        }
     }
 
     /**
@@ -151,9 +110,9 @@ public class Switch {
      */
     public String toString() {
         StringBuilder sb = new StringBuilder("switch ");
-        sb.append(sysName.contains(" ")
-                ? ("\"" + sysName + "\"")
-                : sysName);
+        sb.append(agent.sysName.contains(" ")
+                ? ("\"" + agent.sysName + "\"")
+                : agent.sysName);
         sb.append(" {\n");
 
         for (Vlan vlan: vlans) {
