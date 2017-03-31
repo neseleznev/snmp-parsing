@@ -16,10 +16,7 @@ Parser.class:	src/Parser.java src/Lexer.java
 	javac -cp $(CLSPATH) -d out/production/snmp-parsing $<
 
 classes:
-	javac -cp $(CLSPATH) -d out/production/snmp-parsing \
-			src/Parser.java src/Lexer.java \
-    		src/ConfigFile.java src/SnmpAgent.java \
-    		src/Switch.java src/SnmpConstants.java src/Grabber.java
+	javac -cp $(CLSPATH) -d out/production/snmp-parsing src/*.java
 
 .PHONY:	clean
 clean:

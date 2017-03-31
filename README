@@ -54,3 +54,18 @@ TODO:
 - 2.3 (Subnets)
 
 - Report
+
+=======================================
+
+Usage:
+
+1) make all
+
+Compiles all and runs Parser, i.e. you'll see basic representation
+of parsed config file.
+
+2) export MYCLASSPATH=out/production/snmp-parsing:/opt/snmp4j-2.4.3/dist/snmp4j-2.4.3.jar:/usr/share/java/cup.jar
+
+java -cp $MYCLASSPATH src.Grabber lab.cfg
+
+It will run main program, which is parsing config and invokes discovery for every SnmpAgent instance.

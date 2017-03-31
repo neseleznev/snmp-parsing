@@ -31,6 +31,9 @@ public class Router {
      * Shortcut for discover procedures.
      */
     public void discover(Snmp snmp) {
+        if (agent.host == null) {
+            return;
+        }
         agent.discoverName(snmp);
         discoverInterfaces(snmp);
         discoverRoutes(snmp);
@@ -46,7 +49,6 @@ public class Router {
         List<TreeEvent> events = treeUtils.walk(agent.target, new OID[] {
                 new OID(IFACE_ID), new OID(IFACE_PHYS_ADDR),
                 new OID(IP_ADDRESSES), new OID(IP_MASK)});
-
         HashMap<String, Iface> ifaces = new HashMap<>();
         for (TreeEvent event: events) {
             if(event == null) {
@@ -153,18 +155,18 @@ public class Router {
                 String from = oid.substring(tokens[0].length());
                 String to = binding.getVariable().toString();
                 Route route = routes.get(from);
-                System.out.println(oid + " <" + from + "> <" + to + ">");
+//                System.out.println(oid + " <" + from + "> <" + to + ">");
                 if (isProperPrefix(oid, IP_ROUTE_DEST)) {
                     // Initialize and put routes
                     route = new Route();
                     route.ip = to;
-                    System.out.println("Created " + route.ip);
+//                    System.out.println("Created " + route.ip);
                 } else if (isProperPrefix(oid, IP_ROUTE_NEXT_HOP)) {
                     route.nextIp = to;
-                    System.out.println("Changed nextIP" + route.ip + " " + route.nextIp);
+//                    System.out.println("Changed nextIP" + route.ip + " " + route.nextIp);
                 } else if (isProperPrefix(oid, IP_ROUTE_MASK)) {
                     route.netMask = to;
-                    System.out.println("Changed maskIP" + route.ip + " " + route.netMask);
+//                    System.out.println("Changed maskIP" + route.ip + " " + route.netMask);
                 }
                 // TODO DNS resolution
                 routes.put(from, route);
