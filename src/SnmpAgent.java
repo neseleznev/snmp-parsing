@@ -11,11 +11,11 @@ import org.snmp4j.security.UsmUser;
 import org.snmp4j.smi.*;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Vector;
 
 import static src.SnmpConstants.SYS_NAME;
+import static src.Utils.UNKNOWN;
+import static src.Utils.parseHost;
 
 /* Simple data structure to remember info about an SNMP agent. */
 public class SnmpAgent {
@@ -55,7 +55,7 @@ public class SnmpAgent {
         target.setTimeout(1000);
     }
 
-    String sysName = "<UNKNOWN>";
+    String sysName = UNKNOWN;
 
     /**
      * Asks agent's OID SnmpConstants.SYS_NAME and stores it.
@@ -102,22 +102,6 @@ public class SnmpAgent {
         return null;
     }
 
-    /**
-     * Converts a string representation of host dnsName or IP address (and
-     * optional postfixed port number) into a SNMP4J UDP address.
-     */
-    public static UdpAddress parseHost(String s) {
-        try {
-            String[] parts = s.split(":");
-            InetAddress addr = InetAddress.getByName(parts[0]);
-            int port = (parts.length == 2) ? Integer.parseInt(parts[1]) : 161;
-            return new UdpAddress(addr, port);
-        } catch (UnknownHostException e) {
-            System.out.println("WARNING: Unable to resolve <" + s + "> hostname");
-            return null;
-        }
-    }
-
     public PDU getResponse(Snmp snmp, String oid) throws IOException {
         return getResponse(snmp, new String[] {oid});
     }
@@ -153,7 +137,7 @@ public class SnmpAgent {
             versionString = "2c";
         else if (version == SnmpConstants.version3)
             versionString = "3";
-        String s = (host != null ? host.toString() : "<UNKNOWN>") + " v" + versionString;
+        String s = (host != null ? host.toString() : UNKNOWN) + " v" + versionString;
 
         if (version == SnmpConstants.version1 || version == SnmpConstants.version2c)
             s += " " + community;
