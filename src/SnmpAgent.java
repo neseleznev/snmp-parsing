@@ -60,9 +60,19 @@ public class SnmpAgent {
      * Asks agent's OID SnmpConstants.SYS_NAME and stores it.
      */
     public void discoverName(Snmp snmp) {
+        Vector<VariableBinding> binding = getVariableBinding(snmp, new String[] {SYS_NAME});
+        if (binding != null && binding.size() > 0) {
+            sysName = binding.get(0).getVariable().toString();
+        }
+    }
+
+    /**
+     * Wrapper for SNMP query.
+     */
+    public Vector<VariableBinding> getVariableBinding(Snmp snmp, String[] oids) {
         PDU response = null;
         try {
-            response = getResponse(snmp, SYS_NAME);
+            response = getResponse(snmp, oids);
         } catch (IOException ignored) {
         }
 
@@ -74,10 +84,7 @@ public class SnmpAgent {
 
             if (errorStatus == PDU.noError)
             {
-                Vector<VariableBinding> binding = (Vector<VariableBinding>) response.getVariableBindings();
-                if (binding != null && binding.size() > 0) {
-                    sysName = binding.get(0).getVariable().toString();
-                }
+                return (Vector<VariableBinding>) response.getVariableBindings();
             }
             else
             {
@@ -91,10 +98,11 @@ public class SnmpAgent {
         {
             System.err.println("Error: Response PDU is null");
         }
+        return null;
     }
 
     /**
-     * Converts a string representation of host name or IP address (and
+     * Converts a string representation of host dnsName or IP address (and
      * optional postfixed port number) into a SNMP4J UDP address.
      */
     public static UdpAddress parseHost(String s) {
